@@ -4,6 +4,9 @@ import onnxruntime
 import numpy
 import pyautogui
 
+from aim_controller import Point
+from enemy import Enemy
+
 def __letter_box_resize(img:numpy.ndarray, new_size:tuple[int, int]) -> numpy.ndarray:
     native_w ,native_h, _ = img.shape
 
@@ -41,6 +44,9 @@ def preprocess_image(img, new_size:tuple[int, int]):
 
     return normalized_image
 
+def denormalize_coordinate(coord:int, res_to_denormalize:int, res_from_denormalize:int):
+    return (coord/res_to_denormalize) * res_to_denormalize
+
 def main() -> None:
     model_path = "model/model.onnx"
 
@@ -48,6 +54,7 @@ def main() -> None:
     input_name = session.get_inputs()[0].name
     label_name = session.get_outputs()[0].name
 
+    screen_resolution = (1920, 1080)
     model_image_size = (640, 640)
 
     camera = dxcam.create(
@@ -70,20 +77,24 @@ def main() -> None:
         predicts = outputs[0]
         predicts = numpy.squeeze(predicts, axis=0)
 
-        scale_x = 1920 / model_image_size[0]
-        scale_y = 1080 / model_image_size[1]
+        enemies:list[Enemy] = []
 
         for obj in predicts:
-            x_center, y_center, width, height, conf, cls = obj.tolist()
-
-            # x_left = int(x_center - (width / 2))
-            # x_right = int(x_center + (width / 2))
-            #
-            # y_top = int(y_center + (width / 2))
-            # y_bottom = int(y_center - (width / 2))
+            x_left, y_top, x_right, y_bottom, conf, cls = obj.tolist()
 
             if conf < 0.55:
                 continue
+
+            #Кординати переводяться із нормалізації 640х640 у розміри екрану/зони захвату зображення TODO:Зробить вибір розширень
+            x_left = denormalize_coordinate(x_left, screen_resolution[0], model_image_size[0])
+            y_top = denormalize_coordinate(y_top, screen_resolution[1], model_image_size[1])
+            x_right = denormalize_coordinate(x_right, screen_resolution[0], model_image_size[0])
+            y_bottom = denormalize_coordinate(y_bottom, screen_resolution[1], model_image_size[1])
+
+            left_top:Point = Point(x_left, y_top)
+            right_bottom:Point = Point(x_right, y_bottom)
+
+            enemies.append(Enemy(left_top, right_bottom, conf))
 
             # cv2.rectangle(
             #     frame,
@@ -93,7 +104,7 @@ def main() -> None:
             #     2
             # )
 
-            print(f"Center: ({x_center * scale_x}, {y_center * scale_y}), Size: {width * scale_x}x{height*scale_y}, Conf: {conf:.2f}, Class: {cls}")
+            # print(f"Center: ({x_center * scale_x}, {y_center * scale_y}), Size: {width * scale_x}x{height*scale_y}, Conf: {conf:.2f}, Class: {cls}")
 
         cv2.imshow("test", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):

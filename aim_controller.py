@@ -12,7 +12,7 @@ class Point:
     #Calculate angle of linear function
     @staticmethod
     def get_angle(p1:Point, p2:Point) -> int | float:
-        pass
+        return (p2.y - p1.y) / (p2.x - p1.x)
 
 class AimController:
     def __init__(self, monitor_resolution:tuple[int, int]):
