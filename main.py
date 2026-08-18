@@ -36,7 +36,8 @@ def main() -> None:
     print(camera.is_capturing)
 
     controller = AimController(camera)
-    enemies: list[Enemy] = []
+    manager = multiprocessing.Manager()
+    enemies = manager.list()
 
     aiming_process = multiprocessing.Process(target=controller.update, args=(enemies,))
     aiming_process.start()
@@ -77,8 +78,9 @@ def main() -> None:
                     2
                 )
 
-            # print(f"Center: ({x_center * scale_x}, {y_center * scale_y}), Size: {width * scale_x}x{height*scale_y}, Conf: {conf:.2f}, Class: {cls}")
-
+            # print(f  "Center: ({x_center * scale_x}, {y_center * scale_y}), Size: {width * scale_x}x{height*scale_y}, Conf: {conf:.2f}, Class: {cls}")
+        enemies.clear()
+        
         if SHOW_BBOX_SCREEN:
             cv2.imshow("test", frame)
 
