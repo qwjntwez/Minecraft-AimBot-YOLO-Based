@@ -1,54 +1,28 @@
+
+import multiprocessing
 import dxcam_cpp as dxcam
 import cv2
 import onnxruntime
 import numpy
-import pyautogui
 
-def __letter_box_resize(img:numpy.ndarray, new_size:tuple[int, int]) -> numpy.ndarray:
-    native_w ,native_h, _ = img.shape
-
-    multiplier = min(new_size[0] / native_w, new_size[1] / native_h)
-
-    new_w = int(native_w * multiplier)
-    new_h = int(native_h * multiplier)
-
-    temp_resize = cv2.resize(img, (new_w, new_h),  interpolation=cv2.INTER_LINEAR)
-
-    padding_size = max(new_size[0] - new_w, new_size[1] - new_h) // 2
-
-    if new_w == 0 and new_h > 0:
-        top, bottom, left, right = padding_size, padding_size, 0, 0
-    else:
-        top, bottom, left, right = 0, 0, padding_size, padding_size
-
-    final_image = cv2.copyMakeBorder(
-        temp_resize,
-        top, bottom,
-        left, right,
-        borderType=cv2.BORDER_CONSTANT,
-        value=(114, 114, 114))
-
-    return final_image
-
-def preprocess_image(img, new_size:tuple[int, int]):
-    rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    resized_image = __letter_box_resize(rgb_img, new_size)
-
-    normalized_image = resized_image.astype(numpy.float32) / 255.0
-    normalized_image = normalized_image.transpose(2,0,1)
-    normalized_image = normalized_image[None, ...]
-
-    return normalized_image
+from point import Point
+from enemy import Enemy
+from data_processor import preprocess_image, denormalize_coordinate
+from aim_controller import AimController
 
 def main() -> None:
+    AIMING:bool = True
+    SHOW_BBOX_SCREEN:bool = False
+
+    screen_resolution = (1920, 1080)
+    model_image_size = (640, 640)
+
     model_path = "model/model.onnx"
 
     session = onnxruntime.InferenceSession(model_path, providers=['CPUExecutionProvider'])
+
     input_name = session.get_inputs()[0].name
     label_name = session.get_outputs()[0].name
-
-    model_image_size = (640, 640)
 
     camera = dxcam.create(
         device_idx=0,
@@ -60,45 +34,59 @@ def main() -> None:
 
     print(camera.is_capturing)
 
+    controller = AimController(screen_resolution)
+    manager = multiprocessing.Manager()
+    enemies = manager.list()
+
+    aiming_process = multiprocessing.Process(target=controller.update, args=(enemies,))
+    aiming_process.start()
+
     while True:
         frame = camera.get_latest_frame()
 
-        preprocessed_frame = preprocess_image(frame, model_image_size)
+        preprocessed_frame, padding, multiplier = preprocess_image(frame, model_image_size)
 
         outputs = session.run([label_name], {input_name:preprocessed_frame})
 
         predicts = outputs[0]
         predicts = numpy.squeeze(predicts, axis=0)
 
-        scale_x = 1920 / model_image_size[0]
-        scale_y = 1080 / model_image_size[1]
-
         for obj in predicts:
-            x_center, y_center, width, height, conf, cls = obj.tolist()
+            x_left, y_top, x_right, y_bottom, conf, cls = obj.tolist()
 
-            # x_left = int(x_center - (width / 2))
-            # x_right = int(x_center + (width / 2))
-            #
-            # y_top = int(y_center + (width / 2))
-            # y_bottom = int(y_center - (width / 2))
-
-            if conf < 0.55:
+            if conf < 0.4:
                 continue
 
-            # cv2.rectangle(
-            #     frame,
-            #     (x_left, y_top),
-            #     (x_right, y_bottom),
-            #     (255, 0, 0),
-            #     2
-            # )
+            #Кординати переводяться із нормалізації 640х640 у розміри екрану/зони захвату зображення TODO:Зробить вибір розширень
+            x_left = denormalize_coordinate(x_left, padding, multiplier)
+            y_top = denormalize_coordinate(y_top, padding, multiplier)
+            x_right = denormalize_coordinate(x_right, padding, multiplier)
+            y_bottom = denormalize_coordinate(y_bottom, padding, multiplier)
 
-            print(f"Center: ({x_center * scale_x}, {y_center * scale_y}), Size: {width * scale_x}x{height*scale_y}, Conf: {conf:.2f}, Class: {cls}")
+            left_top:Point = Point(x_left, y_top)
+            right_bottom:Point = Point(x_right, y_bottom)
 
-        cv2.imshow("test", frame)
+            enemies.append(Enemy(left_top, right_bottom, conf))
+
+            if SHOW_BBOX_SCREEN:
+                cv2.rectangle(
+                    frame,
+                    (x_left, y_top),
+                    (x_right, y_bottom),
+                    (255, 0, 0),
+                    2
+                )
+
+            # print(f  "Center: ({x_center * scale_x}, {y_center * scale_y}), Size: {width * scale_x}x{height*scale_y}, Conf: {conf:.2f}, Class: {cls}")
+        enemies.clear()
+        
+        if SHOW_BBOX_SCREEN:
+            cv2.imshow("test", frame)
+
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
+    aiming_process.join()
     camera.stop()
 
     print(camera.is_capturing)
