@@ -7,7 +7,7 @@ import pyautogui
 from aim_controller import Point
 from enemy import Enemy
 
-def __letter_box_resize(img:numpy.ndarray, new_size:tuple[int, int]) -> numpy.ndarray:
+def __letter_box_resize(img:numpy.ndarray, new_size:tuple[int, int]):
     native_w ,native_h, _ = img.shape
 
     multiplier = min(new_size[0] / native_w, new_size[1] / native_h)
@@ -31,21 +31,21 @@ def __letter_box_resize(img:numpy.ndarray, new_size:tuple[int, int]) -> numpy.nd
         borderType=cv2.BORDER_CONSTANT,
         value=(114, 114, 114))
 
-    return final_image
+    return final_image, padding_size, multiplier
 
 def preprocess_image(img, new_size:tuple[int, int]):
     rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    resized_image = __letter_box_resize(rgb_img, new_size)
+    resized_image, padding, multiplier = __letter_box_resize(rgb_img, new_size)
 
     normalized_image = resized_image.astype(numpy.float32) / 255.0
     normalized_image = normalized_image.transpose(2,0,1)
     normalized_image = normalized_image[None, ...]
 
-    return normalized_image
+    return normalized_image, padding, multiplier
 
-def denormalize_coordinate(coord:int, res_to_denormalize:int, res_from_denormalize:int):
-    return (coord/res_to_denormalize) * res_to_denormalize
+def denormalize_coordinate(coord:int, padding:int, multiplier:float):
+    return int((coord - padding) / multiplier)
 
 def main() -> None:
     model_path = "model/model.onnx"
@@ -70,7 +70,7 @@ def main() -> None:
     while True:
         frame = camera.get_latest_frame()
 
-        preprocessed_frame = preprocess_image(frame, model_image_size)
+        preprocessed_frame, padding, multiplier = preprocess_image(frame, model_image_size)
 
         outputs = session.run([label_name], {input_name:preprocessed_frame})
 
@@ -82,30 +82,32 @@ def main() -> None:
         for obj in predicts:
             x_left, y_top, x_right, y_bottom, conf, cls = obj.tolist()
 
-            if conf < 0.55:
+            if conf < 0.1:
                 continue
 
             #Кординати переводяться із нормалізації 640х640 у розміри екрану/зони захвату зображення TODO:Зробить вибір розширень
-            x_left = denormalize_coordinate(x_left, screen_resolution[0], model_image_size[0])
-            y_top = denormalize_coordinate(y_top, screen_resolution[1], model_image_size[1])
-            x_right = denormalize_coordinate(x_right, screen_resolution[0], model_image_size[0])
-            y_bottom = denormalize_coordinate(y_bottom, screen_resolution[1], model_image_size[1])
+            x_left = denormalize_coordinate(x_left, padding, multiplier)
+            y_top = denormalize_coordinate(y_top, padding, multiplier)
+            x_right = denormalize_coordinate(x_right, padding, multiplier)
+            y_bottom = denormalize_coordinate(y_bottom, padding, multiplier)
 
             left_top:Point = Point(x_left, y_top)
             right_bottom:Point = Point(x_right, y_bottom)
 
             enemies.append(Enemy(left_top, right_bottom, conf))
 
-            # cv2.rectangle(
-            #     frame,
-            #     (x_left, y_top),
-            #     (x_right, y_bottom),
-            #     (255, 0, 0),
-            #     2
-            # )
+            cv2.rectangle(
+                frame,
+                (x_left, y_top),
+                (x_right, y_bottom),
+                (255, 0, 0),
+                2
+            )
 
-            # print(f"Center: ({x_center * scale_x}, {y_center * scale_y}), Size: {width * scale_x}x{height*scale_y}, Conf: {conf:.2f}, Class: {cls}")
-
+            print(
+                f"Box: ({x_left}, {y_top}, {x_right}, {y_bottom}), Conf: {conf:.2f}, Class:"
+                f" {cls}"
+            )
         cv2.imshow("test", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
