@@ -1,12 +1,11 @@
-import threading
+
 import multiprocessing
 import dxcam_cpp as dxcam
 import cv2
 import onnxruntime
 import numpy
 
-import aim_controller
-from aim_controller import Point
+from point import Point
 from enemy import Enemy
 from data_processor import preprocess_image, denormalize_coordinate
 from aim_controller import AimController
@@ -35,7 +34,7 @@ def main() -> None:
 
     print(camera.is_capturing)
 
-    controller = AimController(camera)
+    controller = AimController(screen_resolution)
     manager = multiprocessing.Manager()
     enemies = manager.list()
 
@@ -45,7 +44,7 @@ def main() -> None:
     while True:
         frame = camera.get_latest_frame()
 
-        preprocessed_frame = preprocess_image(frame, model_image_size)
+        preprocessed_frame, padding, multiplier = preprocess_image(frame, model_image_size)
 
         outputs = session.run([label_name], {input_name:preprocessed_frame})
 
@@ -55,14 +54,14 @@ def main() -> None:
         for obj in predicts:
             x_left, y_top, x_right, y_bottom, conf, cls = obj.tolist()
 
-            if conf < 0.55:
+            if conf < 0.4:
                 continue
 
             #Кординати переводяться із нормалізації 640х640 у розміри екрану/зони захвату зображення TODO:Зробить вибір розширень
-            x_left = denormalize_coordinate(x_left, screen_resolution[0], model_image_size[0])
-            y_top = denormalize_coordinate(y_top, screen_resolution[1], model_image_size[1])
-            x_right = denormalize_coordinate(x_right, screen_resolution[0], model_image_size[0])
-            y_bottom = denormalize_coordinate(y_bottom, screen_resolution[1], model_image_size[1])
+            x_left = denormalize_coordinate(x_left, padding, multiplier)
+            y_top = denormalize_coordinate(y_top, padding, multiplier)
+            x_right = denormalize_coordinate(x_right, padding, multiplier)
+            y_bottom = denormalize_coordinate(y_bottom, padding, multiplier)
 
             left_top:Point = Point(x_left, y_top)
             right_bottom:Point = Point(x_right, y_bottom)
