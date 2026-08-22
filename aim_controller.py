@@ -8,7 +8,7 @@ class AimController:
 
     def aim(self, target_point:Point) -> None:
 
-        SENSITIVITY = 0.1  # Подбирается экспериментально
+        SENSITIVITY = 1  # Подбирается экспериментально
 
         dx = int((target_point.x - self.monitor_center.x) * SENSITIVITY)
         dy = int((target_point.y - self.monitor_center.y) * SENSITIVITY)
@@ -22,6 +22,7 @@ class AimController:
     def update(self, enemy_list:list[Enemy])->None:
         while True:
             if len(enemy_list) != 0:
-                closest_enemy:Enemy = min(enemy_list, key=lambda enemy: enemy.center.distance(self.monitor_center, enemy.center))
+                closest_enemy:Enemy | None = min(enemy_list, key=lambda enemy: enemy.center.distance(self.monitor_center, enemy.center), default=None)
 
-                self.aim(closest_enemy.center)
+                if closest_enemy is not None:
+                    self.aim(closest_enemy.center)
