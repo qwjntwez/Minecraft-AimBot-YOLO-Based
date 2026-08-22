@@ -17,7 +17,7 @@ def main() -> None:
     screen_resolution = (1920, 1080)
     model_image_size = (640, 640)
 
-    model_path = "model/model.onnx"
+    model_path = "model/temp.onnx"
 
     session = onnxruntime.InferenceSession(model_path, providers=['CPUExecutionProvider'])
 
