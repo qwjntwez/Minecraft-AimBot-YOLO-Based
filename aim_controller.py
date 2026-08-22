@@ -8,7 +8,7 @@ class AimController:
 
     def aim(self, target_point:Point) -> None:
 
-        SENSITIVITY = 1  # Подбирается экспериментально
+        SENSITIVITY = 1 
 
         dx = int((target_point.x - self.monitor_center.x) * SENSITIVITY)
         dy = int((target_point.y - self.monitor_center.y) * SENSITIVITY)
