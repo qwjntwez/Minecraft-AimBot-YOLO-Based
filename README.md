@@ -20,6 +20,8 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 - Target tracking algorithm for smoother and more stable aiming.
 - GUI.
 
+-----------------------------------------------------------------
+
 ### Model Configuration
 
 - The model was trained on the following dataset: 
@@ -33,7 +35,6 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 - Task: Object Detection
 - Classes: 1 (`player`)
 
------------------------------------------------------------------
 
 ### Dataset Split
 
