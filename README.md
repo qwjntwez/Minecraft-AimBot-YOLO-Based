@@ -24,10 +24,8 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 
 ### Model Configuration
 
-- The model was trained on the following dataset: 
-- https://shorturl.at/GvnOI
-  
-- The pretrained ONNX model is included in the repository: `model/model.onnx`
+- **Training dataset:** https://shorturl.at/GvnOI
+- **Pretrained model:** `model/model.onnx`
   
 - Architecture: YOLO26n
 - Input size: 640×640
@@ -39,16 +37,16 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 ### Dataset Split
 
 | Split | Percentage |
-|---|---:|
+| --- | ---: |
 | Train | 70% |
 | Validation | 15% |
 | Test | 15% |
 
 ### Test Metrics
 
-| Metric      | Score |
-|-------------|-------|
-| Precision   | 0.772 |
-| Recall      | 0.735 |
-| mAP@50      | 0.824 |
-| mAP@50–95   | 0.511 |
+| Metric | Score |
+| --- | ---: |
+| Precision | 0.772 |
+| Recall | 0.735 |
+| mAP@50 | 0.824 |
+| mAP@50–95 | 0.511 |
