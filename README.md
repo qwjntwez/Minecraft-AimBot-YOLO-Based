@@ -33,6 +33,8 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 - Task: Object Detection
 - Classes: 1 (`player`)
 
+-----------------------------------------------------------------
+
 ### Dataset Split
 
 | Split | Percentage |
