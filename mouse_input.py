@@ -1,4 +1,5 @@
 import ctypes
+import time
 from ctypes import wintypes
 
 user32 = ctypes.windll.user32
