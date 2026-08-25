@@ -11,14 +11,15 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
   - image preprocessing;
   - player detection;
   - bounding box coordinate transformation from YOLO26 input resolution back to the original screen resolution.
+- Target tracking algorithm for smoother and more stable aiming.
 - Automatic aiming at detected targets.
 - Multithreaded pipeline — screen capture, model inference, and aiming run in separate threads.
 
 ## Planned Features
 
 - Automatic attack system with cooldown adjustment based on the currently equipped weapon.
-- Target tracking algorithm for smoother and more stable aiming.
 - GUI.
+- Transfer to C++
 
 -----------------------------------------------------------------
 
@@ -32,7 +33,6 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 - Format: ONNX
 - Task: Object Detection
 - Classes: 1 (`player`)
-
 
 ### Dataset Split
 
