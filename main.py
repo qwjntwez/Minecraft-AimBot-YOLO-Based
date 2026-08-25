@@ -4,6 +4,8 @@ import dxcam_cpp as dxcam
 import onnxruntime
 import numpy
 
+import time
+
 from boxmot.trackers.results import TrackResults
 from point import Point
 from enemy import Enemy
@@ -25,6 +27,7 @@ def model_inference(frame_input_queue, predict_queue):
     label_name = session.get_outputs()[0].name
 
     while True:
+        start_time = time.perf_counter()
         frame = frame_input_queue.get()
 
         if frame is None:
@@ -46,6 +49,10 @@ def model_inference(frame_input_queue, predict_queue):
             except queue.Empty:
                 pass
 
+        end_time = time.perf_counter()
+        total = end_time - start_time
+        print(f"Model predict delay: {total:.4f} s")
+
 def model_processing(predict_queue, aim_controller:AimController):
     tracker = ocsort.OcSort()
 
@@ -57,11 +64,17 @@ def model_processing(predict_queue, aim_controller:AimController):
         if predict is None or predict.size == 0:
             continue
 
+        track_start_time = time.perf_counter()
         tracks:TrackResults = tracker.update(predict, frame)
+        track_end_time = time.perf_counter()
+        total_track_time = track_end_time - track_start_time
+
+        print(f"Tracking delay: {total_track_time:.4f} s")
 
         if len(tracks) == 0:
             continue
 
+        for_loop_time_start = time.perf_counter()
         for obj in tracks:
             x1, y1, x2, y2, track_id, conf, cls, _ = obj
 
@@ -77,9 +90,22 @@ def model_processing(predict_queue, aim_controller:AimController):
             if AIMING:
                 enemies.append(Enemy(track_id, left_top, right_bottom, conf))
 
+        for_loop_time_end = time.perf_counter()
+        for_loop_time_total = for_loop_time_end - for_loop_time_start
+
+        print(f"For loop every predict and process it delay: {for_loop_time_total:.4f} s")
+
+
         if AIMING:
+            aim_time_start = time.perf_counter()
             aim_controller.update(enemies)
+
             del enemies[:]
+            aim_time_end = time.perf_counter()
+
+            total_aim_time = aim_time_end - aim_time_start
+            print(f"Aim and clear enemies list: {total_aim_time:.4f} s")
+
 
 def main() -> None:
     #Variables for processes
@@ -95,7 +121,7 @@ def main() -> None:
     )
     model_inference_process.start()
 
-    model_process = multiprocessing.Process(target=model_processing, args=(predict_queue,out_frame_queue, controller,))
+    model_process = multiprocessing.Process(target=model_processing, args=(predict_queue, controller,))
     model_process.start()
 
     camera = dxcam.create(
@@ -108,6 +134,7 @@ def main() -> None:
     print(camera.is_capturing)
 
     while True:
+        start_time = time.perf_counter()
         frame = camera.get_latest_frame()
         try:
             frame_queue.put_nowait(frame)
@@ -117,7 +144,11 @@ def main() -> None:
                 frame_queue.put_nowait(frame)
             except queue.Empty:
                 pass
+        end_time = time.perf_counter()
 
+        total_time = end_time - start_time
+
+        print(f"Screen capture delay: {total_time:.4f} s")
 
 if __name__ == '__main__':
     main()
