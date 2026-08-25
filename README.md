@@ -19,7 +19,6 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 
 - Automatic attack system with cooldown adjustment based on the currently equipped weapon.
 - GUI.
-- Transfer to C++
 
 -----------------------------------------------------------------
 
