@@ -16,7 +16,7 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 - Multithreaded pipeline — screen capture, model inference, and aiming run in separate threads.
 
 ## Planned Features
-
+- Performance optimization.
 - Automatic attack system with cooldown adjustment based on the currently equipped weapon.
 - GUI.
 
