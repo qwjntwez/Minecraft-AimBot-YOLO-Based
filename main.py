@@ -3,10 +3,11 @@ import queue
 import dxcam_cpp as dxcam
 import onnxruntime
 import numpy
-
 import time
+import threading
 
 from boxmot.trackers.results import TrackResults
+from udp_listener import UDPListener
 from point import Point
 from enemy import Enemy
 from data_processor import preprocess_image, denormalize_bbox
@@ -108,21 +109,31 @@ def model_processing(predict_queue, aim_controller:AimController):
 
 
 def main() -> None:
-    #Variables for processes
     controller = AimController(screen_resolution)
+    udp_listener = UDPListener("127.0.0.1", 5000)
 
     frame_queue = multiprocessing.Queue(maxsize=1)
     predict_queue = multiprocessing.Queue(maxsize=1)
-    out_frame_queue = multiprocessing.Queue(maxsize=1)
 
     #Processes
     model_inference_process = multiprocessing.Process(
         target=model_inference, args=(frame_queue, predict_queue,)
     )
+    model_inference_process.daemon = True
     model_inference_process.start()
 
     model_process = multiprocessing.Process(target=model_processing, args=(predict_queue, controller,))
+    model_process.daemon = True
     model_process.start()
+
+    #Threads
+    attack_thread = threading.Thread(target=controller.attack)
+    attack_thread.daemon = True
+    attack_thread.start()
+
+    udp_thread = threading.Thread(target=udp_listener.state_update, args=(controller,))
+    udp_thread.daemon = True
+    udp_thread.start()
 
     camera = dxcam.create(
         device_idx=0,
