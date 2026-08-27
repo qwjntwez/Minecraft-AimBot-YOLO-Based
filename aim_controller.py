@@ -1,4 +1,7 @@
+import pydirectinput
+
 import mouse_input
+
 from enemy import Enemy
 from point import Point
 
@@ -6,10 +9,13 @@ class AimController:
     def __init__(self, monitor_resolution:tuple[int, int]):
         self.monitor_center = Point(monitor_resolution[0] // 2, monitor_resolution[1] // 2)
 
+        self.weapon_cooldown = 0
+        self.can_attack = False
+
     def aim(self, target_point:Point) -> None:
         target_local_point = Point(target_point.x - self.monitor_center.x, target_point.y - self.monitor_center.y)
 
-        SENSITIVITY = 0.1
+        SENSITIVITY = 0.2
 
         if Point.distance(Point(0,0), target_local_point) > 1:
             dx = int(round(target_local_point.x * SENSITIVITY))
@@ -35,3 +41,12 @@ class AimController:
 
             if closest_enemy is not None:
                 self.aim(closest_enemy.center)
+
+    def attack(self):
+        while True:
+            print(f"Can attack: {self.can_attack}")
+            print(f"Weapon KD: {self.weapon_cooldown}")
+            print(f"condition: {self.can_attack == 1 and self.weapon_cooldown == 1.0}")
+
+            if self.can_attack == 1 and self.weapon_cooldown == 1.0:
+                pydirectinput.click(button="left")
