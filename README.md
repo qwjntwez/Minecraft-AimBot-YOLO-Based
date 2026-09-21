@@ -44,11 +44,19 @@ A computer vision-based aim bot for Minecraft using a custom-trained YOLO26 mode
 | Validation | 15% |
 | Test | 15% |
 
-### Test Metrics
-
+### Test Metrics 
+| FP32 |
 | Metric | Score |
 | --- | ---: |
-| Precision | 0.772 |
-| Recall | 0.735 |
-| mAP@50 | 0.824 |
-| mAP@50–95 | 0.511 |
+| Precision | 0.915 |
+| Recall | 0.792 |
+| mAP@50 | 0.89 |
+| mAP@50–95 | 0.58 |
+
+| FP16 |
+| Metric | Score |
+| --- | ---: |
+| Precision | 0.928 |
+| Recall | 0.781 |
+| mAP@50 | 0.888 |
+| mAP@50–95 | 0.588 |
