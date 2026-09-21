@@ -24,7 +24,7 @@ class AimController:
             mouse_input.move_mouse(dx, dy)
 
     def update(self, enemy_list:list[Enemy])->None:
-        id_to_track:int | None = None
+        # id_to_track:int | None = None
 
         if len(enemy_list) > 0:
                 # if id_to_track is None:
@@ -44,9 +44,9 @@ class AimController:
 
     def attack(self):
         while True:
-            print(f"Can attack: {self.can_attack}")
-            print(f"Weapon KD: {self.weapon_cooldown}")
-            print(f"condition: {self.can_attack == 1 and self.weapon_cooldown == 1.0}")
+            # print(f"Can attack: {self.can_attack}")
+            # print(f"Weapon KD: {self.weapon_cooldown}")
+            # print(f"condition: {self.can_attack == 1 and self.weapon_cooldown == 1.0}")
 
             if self.can_attack == 1 and self.weapon_cooldown == 1.0:
                 pydirectinput.click(button="left")

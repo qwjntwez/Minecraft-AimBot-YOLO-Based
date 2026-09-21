@@ -17,7 +17,7 @@ from boxmot.trackers.bbox import ocsort
 AIMING:bool = True
 
 model_image_size:tuple[int, int] = (640, 640)
-screen_resolution:tuple[int, int] = (1920, 1080)
+screen_resolution:tuple[int, int] = (2560, 1440)
 
 model_path:str = "model/model.onnx"
 
